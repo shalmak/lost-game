@@ -4,7 +4,7 @@
     var screen_width = clientWidth*.95
     var screen_height = clientHeight*.95
 
-    var game = new Phaser.Game(screen_width, screen_height, Phaser.CANVAS, 'game');
+    var game = new Phaser.Game(640, 480, Phaser.AUTO, 'game');
     var g_places = null
     var g_player = null
 
@@ -17,8 +17,8 @@
 
     var sounds = {};
 
-    var n_tree_layers = 10;
-    var layers_after = 0;
+    var n_tree_layers = 30;
+    var layers_after = 1;
 
 function init_sound(sound, length)
 {
@@ -39,75 +39,6 @@ function stop_sound(sound)
     sounds[sound].stop('x')
 }
 
-//function movePlatform(platform)
-//{
-//    if (platform.y_period && platform.min_y != platform.max_y)
-//    {
-//        if (platform.y_dir == null)
-//            platform.y_dir = 1;
-//
-//        total_dist = platform.max_y - platform.min_y;
-//        v =  total_dist / platform.y_period
-//
-//        y = platform.sprite.y
-//
-//        mid_point = platform.min_y + total_dist / 2;
-//
-//        v *= (1 - Math.abs(y - mid_point)/total_dist);
-//
-//        if ((y >= platform.max_y && platform.y_dir == 1) ||
-//            (y <= platform.min_y && platform.y_dir == -1))
-//        {
-//            platform.y_dir *= -1;
-//            if (platform.hops)
-//            {
-//                platform.hops--;
-//                if (platform.hops == 0)
-//                {
-//                    platform.y_dir = 0;
-//                    platform.min_y = y;
-//                    platform.max_y = y;
-//                }
-//            }
-//        }
-//
-//        platform.sprite.body.velocity.y = platform.y_dir * v
-//    }
-//    if (platform.x_period && platform.min_x != platform.max_x)
-//    {
-//        if (platform.x_dir == null)
-//            platform.x_dir = 1;
-//
-//        total_dist = platform.max_x - platform.min_x;
-//        v =  total_dist / platform.x_period
-//
-//        x = platform.sprite.x
-//
-//        mid_point = platform.min_x + total_dist / 2;
-//
-//        v *= (1 - Math.abs(x - mid_point)/total_dist);
-//
-//        if ((x >= platform.max_x && platform.x_dir == 1) ||
-//            (x <= platform.min_x && platform.x_dir == -1))
-//        {
-//            platform.x_dir *= -1;
-//            if (platform.hops)
-//            {
-//                platform.hops--;
-//                if (platform.hops == 0)
-//                {
-//                    platform.x_dir = 0;
-//                    platform.min_x = x;
-//                    platform.max_x = x;
-//                }
-//            }
-//        }
-//
-//        platform.sprite.body.velocity.x = platform.x_dir * v
-//    }
-//
-//}
-
 function handlePlace(place_name, force)
 {
     place = g_places[place_name];
@@ -124,31 +55,6 @@ function handlePlace(place_name, force)
 
 function addTrees(treesLayer, platform, depth)
 {
-//    x = game.rnd.between(50, 150);
-//    while (x < platform.width * platform_unit_length)
-//    {
-//        if (game.rnd.between(0, 1) > 0.5)
-//            tree_type = '1';
-//        else
-//            tree_type = '2';
-//        tree = treesLayer.create(0, 0, 'tree' + tree_type);
-//        tree.anchor.set(0.5, 1);
-//        depth_scale_factor = .5
-//        tree.scale.setTo(depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers) )
-//        tree.x = platform.x + x;
-//        tree.y = world_height - platform.y + 5;
-//        if ( depth == n_tree_layers - 1)
-//        {
-//            roots = treesLayer.create(0, 0, 'roots');
-//            roots.anchor.set(0.5, 0);
-//            roots.scale.setTo(0.25 * (depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers)))
-//            roots.x = platform.x + x;
-//            roots.y = world_height - platform.y + Math.max(platform.height, 2) * platform_unit_length - 10
-//        }
-//
-//        x += game.rnd.between(200, 2000);
-//    }
-
     tree_prob = .7
 
     for (var x = 0 ; x < platform.width * platform_unit_length ; x += 100)
@@ -201,7 +107,7 @@ function default_land(impact_velocity, game)
 
         this.player = null;
         this.camera_focus = null;
-        this.camera_focus_time = 300;
+        this.camera_focus_time = 100;
         this.camera_tween = null;
         this.walls = null;
         this.objects = null;
@@ -219,7 +125,7 @@ function default_land(impact_velocity, game)
         this.cursors = null;
 
         this.render_textures = {};
-        this.jump_counter = 0;
+        this.jump_counter = 20;
     };
 
     PhaserGame.prototype = {
@@ -232,7 +138,6 @@ function default_land(impact_velocity, game)
 
             this.physics.startSystem(Phaser.Physics.ARCADE);
 
-//            this.physics.arcade.gravity.y = 900;
             this.physics.arcade.skipQuadTree = false;
         },
 
@@ -240,13 +145,15 @@ function default_land(impact_velocity, game)
             this.load.spritesheet('dude', 'img/dude.png', 32, 48);
 
             this.load.image('ball', '../breakout/img/ball.png');
+//            this.load.image('guy', 'img/guy4.png');
+            this.load.spritesheet('guy', 'img/guy.png', 133, 155);
             this.load.spritesheet('flame', 'img/flame.png', 256, 256);
 
             this.load.image('tree1', 'img/tree1.png');
             this.load.image('tree2', 'img/tree2.png');
             this.load.image('cloud1', 'img/cloud1.png');
             this.load.image('cloud2', 'img/cloud2.png');
-//            this.load.image('trigger', '../breakout/img/soccer-ball.png');
+
             for (var i = 1 ; i <= 5 ; i++)
             {
                 wall_name = 'Wall ' + i;
@@ -374,8 +281,8 @@ function default_land(impact_velocity, game)
         createPlatformSprite : function (x, y, width, height, platform)
         {
             renderTexture = this.createRenderTexture(width, height)
-            platform.sprite = game.add.sprite(x, y, renderTexture);
-            game.physics.arcade.enable(platform.sprite);
+            platform.sprite = this.add.sprite(x, y, renderTexture);
+            this.physics.arcade.enable(platform.sprite);
             platform.sprite.enableBody = true;
             platform.sprite.body.allowGravity = false;
             platform.sprite.body.immovable = true;
@@ -436,7 +343,7 @@ function default_land(impact_velocity, game)
 
         createObject: function (name)
         {
-            sprite = game.add.sprite(0, 0, name, null, this.objects);
+            sprite = this.add.sprite(0, 0, name, null, this.objects);
             sprite.body.allowGravity = false;
 
             return sprite
@@ -504,13 +411,6 @@ function default_land(impact_velocity, game)
             this.place_names.push(place.name);
         },
 
-//        setLerp : function (lerp)
-//        {
-//            game.camera.lerp.y = lerp;
-//            this.lerpBase = lerp
-//            this.lerpTimer = this.time.time
-//        },
-//
         reveal: function (height, delay)
         {
             this.add.tween(this.camera.bounds).to({ height: height}, delay).start()
@@ -547,7 +447,7 @@ function default_land(impact_velocity, game)
 
                 var cloud = this.cloudsLayer.create(x, this.rnd.between(-50, 100), 'cloud' + cloud_type);
                 cloud.body.velocity.x = this.rnd.between(0, 10);
-//                cloud.body.velocity.x = this.rnd.between(50, 60);
+
                 cloud.scale.setTo(this.rnd.between(0.5, 2.0))
 
                 x += this.rnd.between(100, 300);
@@ -558,16 +458,20 @@ function default_land(impact_velocity, game)
 
             this.treeLayers = [];
             for (var i = 0 ; i < n_tree_layers-layers_after ; i++)
-                this.treeLayers.push(game.add.group());
+                this.treeLayers.push(this.add.group());
 
-            this.walls = this.add.physicsGroup();
+            this.walls = this.add.physicsGroup(Phaser.Physics.ARCADE);
+            this.walls.position.setTo(0, 0);
             this.objects = this.add.physicsGroup(Phaser.Physics.ARCADE);
             this.objects.position.setTo(0, 0);
 
             for (; i < n_tree_layers; i++)
-                this.treeLayers.push(game.add.group());
+                this.treeLayers.push(this.add.group());
 
-            this.player = this.add.sprite(0, 0, 'dude', null, this.objects);
+//            this.player = this.add.sprite(0, 0, 'dude', null, this.objects);
+            this.player = this.add.sprite(0, 0, 'guy', null, this.objects);
+            this.player.anchor.setTo(0.5, 1)
+            this.player.scale.setTo(0.4)
             this.camera_focus = this.add.sprite(0, 0, 'ball');
             this.camera_focus.renderable = false;
             g_player = this.player;
@@ -579,11 +483,12 @@ function default_land(impact_velocity, game)
 
             this.camera_focus.body.allowGravity = false;
             this.player.body.collideWorldBounds = true;
-            this.player.body.setSize(20, 32, 5, 16);
+            crop_x = 40
+            crop_y = 8
+            this.player.body.setSize(133-2*crop_x, 155-2*crop_y, crop_x, crop_y);
 
-            this.player.animations.add('left', [0, 1, 2, 3], 10, true);
+            this.player.animations.add('walk', null, 10, true);
             this.player.animations.add('turn', [4], 20, true);
-            this.player.animations.add('right', [5, 6, 7, 8], 10, true);
 
             this.camera.follow(this.camera_focus);
 
@@ -595,7 +500,7 @@ function default_land(impact_velocity, game)
             this.game.input.onUp.add(function () { this.input_down=false;});
 
 
-            sounds.hit = game.add.audio('hit');
+            sounds.hit = this.add.audio('hit');
 //            sounds.hit.allowMultiple = true;
             sounds.hit.addMarker('x', 0.25, .5);
 
@@ -695,18 +600,6 @@ function default_land(impact_velocity, game)
 
             this.place_names.forEach(function (place_name) {handlePlace(place_name, false)});
 
-//            if (this.camera.lerp.y < 1)
-//            {
-//                progress = Math.min((this.time.time - this.lerpTimer) / 6000, 1)
-//                this.camera.lerp.y = this.lerpBase + progress * (1 - this.lerpBase)
-//            }
-//
-//            if (this.revealSource && this.camera.bounds.height != this.revealTarget)
-//            {
-//                progress = Math.min((this.time.time - this.revealStartTime) / this.revealDuration, 1)
-//                this.camera.bounds.height = progress * this.revealTarget + (1 - progress) * this.revealSource
-//            }
-
             jumping = false;
             moving_left = false;
             moving_right = false;
@@ -715,19 +608,19 @@ function default_land(impact_velocity, game)
             {
                 x_padding = 10
                 y_limit = 40
-                if (this.player.body.y - game.input.worldY < y_limit)
+                if (this.player.body.y - this.game.input.worldY < y_limit)
                 {
-                    if (game.input.worldX < this.player.body.x - x_padding)
+                    if (this.game.input.worldX < this.player.body.x - x_padding)
                     {
                         moving_left = true;
                     }
-                    else if (game.input.worldX > this.player.body.x + x_padding)
+                    else if (this.game.input.worldX > this.player.body.x + x_padding)
                     {
                         moving_right = true;
                     }
                 }
-                if ((Math.abs(this.player.body.y - game.input.worldY - 2.5*y_limit) < 2*y_limit) &&
-                    Math.abs(game.input.worldX - this.player.body.x) < screen_width/3)
+                if ((Math.abs(this.player.body.y - this.game.input.worldY - 2.5*y_limit) < 2*y_limit) &&
+                    Math.abs(this.game.input.worldX - this.player.body.x) < screen_width/3)
                 {
                     jumping = true;
                 }
@@ -746,17 +639,16 @@ function default_land(impact_velocity, game)
             if (moving_left || moving_right || jumping || !standing)
             {
                 this.standingTimer = 0;
-//                this.drift_wall = null;
             }
             else if (standing)
             {
-                if (this.standingTimer == 0)
-                    this.standingTimer = this.time.time + 500
-                else if (this.standingTimer < this.time.time)
-                {
+//                if (this.standingTimer == 0)
+//                    this.standingTimer = this.time.time + 200
+//                else if (this.standingTimer < this.time.time)
+//                {
                     this.player.frame = 4;
-                    this.standingTimer = 0;
-                }
+//                    this.standingTimer = 0;
+//                }
             }
 
             if ((standing || flying_control) && moving_left)
@@ -767,7 +659,8 @@ function default_land(impact_velocity, game)
                     this.player.body.velocity.x = -2*running_velocity;
                 if (this.facing !== 'left')
                 {
-                    this.player.play('left');
+                    this.player.scale.x = Math.abs(this.player.scale.x);
+                    this.player.play('walk');
                     this.facing = 'left';
                 }
             }
@@ -780,7 +673,8 @@ function default_land(impact_velocity, game)
 
                 if (this.facing !== 'right')
                 {
-                    this.player.play('right');
+                    this.player.scale.x = -Math.abs(this.player.scale.x);
+                    this.player.play('walk');
                     this.facing = 'right';
                 }
             }
@@ -793,28 +687,21 @@ function default_land(impact_velocity, game)
                 {
                     this.player.animations.stop();
 
-                    if (this.facing === 'left')
-                    {
+//                    if (this.facing === 'left')
+//                    {
                         this.player.frame = 0;
-                    }
-                    else
-                    {
-                        this.player.frame = 5;
-                    }
+//                    }
+//                    else
+//                    {
+//                        this.player.frame = 5;
+//                    }
 
                     this.facing = 'idle';
                 }
             }
 
-            //  No longer standing on the edge, but were
-            //  Give them a 250ms grace period to jump after falling
-//            if (!standing && this.wasStanding)
-//            {
-//                this.edgeTimer = this.time.time + 250;
-//            }
-
             //  Allowed to jump?
-            if ((standing /*|| this.time.time <= this.edgeTimer*/) && jumping /*&& this.time.time > this.jumpTimer*/)
+            if (standing && jumping)
             {
                 if (this.jump_counter)
                 {
@@ -825,7 +712,6 @@ function default_land(impact_velocity, game)
                 this.player.body.velocity.y = -jumping_velocity;
                 if (this.shift_key.isDown)
                     this.player.body.velocity.y = -2*jumping_velocity;
-//                this.jumpTimer = this.time.time + 750;
             }
 
             this.wasStanding = standing;
