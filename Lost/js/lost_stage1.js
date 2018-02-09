@@ -554,10 +554,19 @@ function init_game_data(game)
 
     game.createStage(platform_data, places_data)
 
+//    guy = game.createObject('guy')
+//    guy.scale.setTo(32/78, 48/161)
+//    guy.scale.setTo(.6)
+//    guy.x = world_width- 500
+//    guy.y = world_height - (stage1_height + ground_height + guy.height)
+//    guy.animations.add('guy', null, 20, true);
+//    guy.play('guy');
+
     game.camera.bounds.height = stage1_height;
 
     var stage1_start = {
-        x: world_width - 400,
+        x: world_width - 300,
+//        y: world_height - (stage1_height + 150)
         y: world_height - (stage1_height + 150)
     }
 
