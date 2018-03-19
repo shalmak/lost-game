@@ -20,6 +20,8 @@
     var n_tree_layers = 30;
     var layers_after = 1;
 
+    var headache = 0;
+
 function init_sound(sound, length)
 {
     if (!length)
@@ -53,35 +55,26 @@ function handlePlace(place_name, force)
     }
 }
 
-function addTrees(treesLayer, platform, depth)
+function addTrees(treesLayer, treesData, platform, depth)
 {
-    tree_prob = .7
-
-    for (var x = 0 ; x < platform.width * platform_unit_length ; x += 100)
+    for (var i = 0 ; i < treesData.length ; i++)
     {
-        rand = game.rnd.between(0, 100)/100;
-        if (rand > tree_prob)
+        var td = treesData[i];
+        tree = treesLayer.create(0, 0, 'tree' + td.tree_type);
+        tree.anchor.set(0.5, 1);
+        depth_scale_factor = .5
+        tree.scale.setTo(depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers) )
+        if (td.flip_x)
+            tree.scale.x *= -1;
+        tree.x = platform.x + td.x;
+        tree.y = world_height - platform.y + 5;
+        if ( depth == n_tree_layers - 1)
         {
-            if (rand > tree_prob + .5*(1-tree_prob))
-                tree_type = '1';
-            else
-                tree_type = '2';
-            tree = treesLayer.create(0, 0, 'tree' + tree_type);
-            tree.anchor.set(0.5, 1);
-            depth_scale_factor = .5
-            tree.scale.setTo(depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers) )
-            if (game.rnd.between(0, 1) == 1)
-                tree.scale.x *= -1;
-            tree.x = platform.x + x;
-            tree.y = world_height - platform.y + 5;
-            if ( depth == n_tree_layers - 1)
-            {
-                roots = treesLayer.create(0, 0, 'roots');
-                roots.anchor.set(0.5, 0);
-                roots.scale.setTo(0.25 * (depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers)))
-                roots.x = platform.x + x;
-                roots.y = world_height - platform.y + Math.max(platform.height, 2) * platform_unit_length - 10
-            }
+            roots = treesLayer.create(0, 0, 'roots');
+            roots.anchor.set(0.5, 0);
+            roots.scale.setTo(0.25 * (depth_scale_factor + (1-depth_scale_factor)*((depth+1)/n_tree_layers)))
+            roots.x = platform.x + td.x;
+            roots.y = world_height - platform.y + Math.max(platform.height, 2) * platform_unit_length - 10
         }
     }
 }
@@ -111,6 +104,7 @@ function default_land(impact_velocity, game)
         this.camera_tween = null;
         this.walls = null;
         this.objects = null;
+        this.enemies = null;
         this.my_tweens = [];
         this.place_names = [];
         this.places = {};
@@ -146,7 +140,7 @@ function default_land(impact_velocity, game)
 
             this.load.image('ball', '../breakout/img/ball.png');
 //            this.load.image('guy', 'img/guy4.png');
-            this.load.spritesheet('guy', 'img/guy.png', 133, 155);
+            this.load.spritesheet('guy', 'img/guy.png', 40, 48);
             this.load.spritesheet('flame', 'img/flame.png', 256, 256);
 
             this.load.image('tree1', 'img/tree1.png');
@@ -171,12 +165,18 @@ function default_land(impact_velocity, game)
             this.load.image('roots', 'img/Roots.png');
             this.load.image('grass', 'img/Grass.png');
 
+            this.load.image('flower', 'img/flower.png');
+            this.load.spritesheet('grasshead', 'img/grasshead_anim.png', 49, 48);
+            this.load.spritesheet('ghost', 'img/ghost_anim.png', 126, 82);
+
+            this.load.audio('music', 'audio/namaste.mp3');
 
             this.load.audio('jump', 'audio/jump.wav');
             this.load.audio('hit', 'audio/ouch.wav');
             this.load.audio('land', 'audio/jumpland.wav');
             this.load.audio('gate', 'audio/Randomize.ogg');
             this.load.audio('machines', 'audio/machine.ogg');
+            this.load.audio('shrink', 'audio/Powerup4.wav');
         },
 
         my_moveTo: function(body, target, duration, delay, autostart)
@@ -309,8 +309,8 @@ function default_land(impact_velocity, game)
 //                b = 2*Math.PI / d
 //                a = b * c / 2
 //                peak_v = a
-                d = platform.x_period / 1000
-                peak_v = (Math.PI / d) * (platform.other_x - platform.x)
+                var d = platform.x_period / 1000
+                var peak_v = (Math.PI / d) * (platform.other_x - platform.x)
                 platform.x_tween = this.add.tween(platform.sprite.body.velocity)
                     .to({x:peak_v}, 1000*d/4, Phaser.Easing.Sinusoidal.Out)
                     .to({x:0}, 1000*d/4, Phaser.Easing.Sinusoidal.In)
@@ -326,8 +326,8 @@ function default_land(impact_velocity, game)
 //                b = 2*Math.PI / d
 //                a = b * c / 2
 //                peak_v = a
-                d = platform.y_period / 1000
-                peak_v = (Math.PI / d) * (platform.other_y - platform.y)
+                var d = platform.y_period / 1000
+                var peak_v = (Math.PI / d) * (platform.other_y - platform.y)
                 platform.y_tween = this.add.tween(platform.sprite.body.velocity)
                     .to({y:peak_v}, 1000*d/4, Phaser.Easing.Sinusoidal.Out)
                     .to({y:0}, 1000*d/4, Phaser.Easing.Sinusoidal.In)
@@ -340,6 +340,12 @@ function default_land(impact_velocity, game)
             return platform
         },
 
+        createEnemy: function (name)
+        {
+            sprite = this.add.sprite(0, 0, name, null, this.enemies);
+            sprite.body.allowGravity = false;
+            return sprite
+        },
 
         createObject: function (name)
         {
@@ -369,11 +375,12 @@ function default_land(impact_velocity, game)
         {
             for (var i = 0 ; i < platform_data.length ; i++)
             {
-                if (platform_data[i].trees)
+                trees = platform_data[i].trees
+                if (trees)
                 {
-                    for (var j = 0 ; j < n_tree_layers ; j++)
+                    for (var j = 0 ; j < trees.length ; j++)
                     {
-                        addTrees(this.treeLayers[j], platform_data[i], j)
+                        addTrees(this.treeLayers[j], trees[j], platform_data[i], j)
                     }
 
                     this.addGrass(this.walls, platform_data[i])
@@ -383,7 +390,7 @@ function default_land(impact_velocity, game)
             for (var i = 0 ; i < platform_data.length ; i++)
             {
                 var pd = platform_data[i]
-                platform = this.createPlatform(pd)
+                var platform = this.createPlatform(pd)
                 if (pd.tags)
                     pd.tags.forEach( function(tag) { savePlatform(platform, tag) })
 
@@ -464,6 +471,8 @@ function default_land(impact_velocity, game)
             this.walls.position.setTo(0, 0);
             this.objects = this.add.physicsGroup(Phaser.Physics.ARCADE);
             this.objects.position.setTo(0, 0);
+            this.enemies = this.add.physicsGroup(Phaser.Physics.ARCADE);
+            this.enemies.position.setTo(0, 0);
 
             for (; i < n_tree_layers; i++)
                 this.treeLayers.push(this.add.group());
@@ -471,7 +480,10 @@ function default_land(impact_velocity, game)
 //            this.player = this.add.sprite(0, 0, 'dude', null, this.objects);
             this.player = this.add.sprite(0, 0, 'guy', null, this.objects);
             this.player.anchor.setTo(0.5, 1)
-            this.player.scale.setTo(0.4)
+
+            var player_full_size = 1.5
+            this.player.scale.setTo(player_full_size)
+            this.player.abs_size = player_full_size
             this.camera_focus = this.add.sprite(0, 0, 'ball');
             this.camera_focus.renderable = false;
             g_player = this.player;
@@ -483,9 +495,9 @@ function default_land(impact_velocity, game)
 
             this.camera_focus.body.allowGravity = false;
             this.player.body.collideWorldBounds = true;
-            crop_x = 40
-            crop_y = 8
-            this.player.body.setSize(133-2*crop_x, 155-2*crop_y, crop_x, crop_y);
+            crop_x = 0
+            crop_y = 0
+            this.player.body.setSize(40-2*crop_x, 48-2*crop_y, crop_x, crop_y);
 
             this.player.animations.add('walk', null, 10, true);
             this.player.animations.add('turn', [4], 20, true);
@@ -499,7 +511,8 @@ function default_land(impact_velocity, game)
             this.game.input.onDown.add(function () { this.input_down=true;});
             this.game.input.onUp.add(function () { this.input_down=false;});
 
-
+            music = this.add.audio('music');
+            music.play();
             sounds.hit = this.add.audio('hit');
 //            sounds.hit.allowMultiple = true;
             sounds.hit.addMarker('x', 0.25, .5);
@@ -508,6 +521,7 @@ function default_land(impact_velocity, game)
             init_sound('land')
             init_sound('gate');
             init_sound('machines', 3)
+            init_sound('shrink')
 
             init_game_data(this)
 
@@ -531,6 +545,11 @@ function default_land(impact_velocity, game)
 
         },
 
+        updateEnemy: function (enemy)
+        {
+            enemy.update(this)
+        },
+
         checkCollideWall: function (player, wall) {
             if (wall.body.allowGravity)
                 return false;
@@ -538,11 +557,22 @@ function default_land(impact_velocity, game)
             return true;
         },
 
+        collideEnemy: function (player, enemy)
+        {
+            enemy.collidePlayer(player, this);
+        },
+
         collideWall: function (player, wall) {
             if (player.body.touching.up || player.body.blocked.up)
             {
                 stop_sound("jump")
                 play_sound("hit")
+                headache = headache + 1
+                if (headache == 5)
+                {
+                    headache = 0
+                    wall.platform.sprite.body.allowGravity = true;
+                }
             }
             if (player.body.touching.down || player.body.blocked.down)
             {
@@ -587,6 +617,7 @@ function default_land(impact_velocity, game)
             this.cloudsLayer.y = Math.min(this.camera.y * .9, 1000-this.camera.view.height);
             this.cloudsLayer.x = this.camera.x * .9;
             this.cloudsLayer.forEach(this.wrapCloud, this);
+            this.enemies.forEach(this.updateEnemy, this);
 
             for (var i = 0 ; i < n_tree_layers ; i++)
                 this.treeLayers[i].x = this.camera.x * Math.pow(.9, i+2)
@@ -594,6 +625,8 @@ function default_land(impact_velocity, game)
             this.player_prev_velocity_y = this.player.body.velocity.y
             this.physics.arcade.collide(this.player, this.walls, this.collideWall, this.checkCollideWall, this);
 	        this.physics.arcade.overlap(this.player, this.objects, this.overlapObject, null, this);
+            this.physics.arcade.collide(this.player, this.enemies, this.collideEnemy, null, this);
+            this.physics.arcade.collide(this.enemies, this.walls, null, null, this);
 
             //  Do this AFTER the collide check, or we won't have blocked/touching set
             var standing = this.player.body.blocked.down || this.player.body.touching.down;
@@ -659,7 +692,7 @@ function default_land(impact_velocity, game)
                     this.player.body.velocity.x = -2*running_velocity;
                 if (this.facing !== 'left')
                 {
-                    this.player.scale.x = Math.abs(this.player.scale.x);
+                    this.player.scale.x = this.player.abs_size;
                     this.player.play('walk');
                     this.facing = 'left';
                 }
@@ -673,7 +706,7 @@ function default_land(impact_velocity, game)
 
                 if (this.facing !== 'right')
                 {
-                    this.player.scale.x = -Math.abs(this.player.scale.x);
+                    this.player.scale.x = -this.player.abs_size;
                     this.player.play('walk');
                     this.facing = 'right';
                 }

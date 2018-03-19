@@ -127,25 +127,133 @@ function sinking_platform(x, y, max_sink)
        }
 }
 
+function randomTrees(max_x)
+{
+    tree_prob = .7
+    distance = 100
+
+    var trees = []
+
+    for (var x = 0 ; x < max_x ; x += distance)
+    {
+        rand = game.rnd.between(0, 100)/100;
+        if (rand > tree_prob)
+        {
+            if (rand > tree_prob + .5*(1-tree_prob))
+                tree_type = '1';
+            else
+                tree_type = '2';
+
+            flip_x = game.rnd.between(0, 1) == 1
+            trees.push(
+            {
+                tree_type: tree_type,
+                flip_x: flip_x,
+                x: x,
+            }
+            )
+        }
+    }
+
+    return trees
+}
+
+var fixedTrees =
+[
+    [
+      {
+        "tree_type": "2",
+        "flip_x": false,
+        "x": 250
+      },
+      {
+        "tree_type": "2",
+        "flip_x": false,
+        "x": 650
+      },
+      {
+        "tree_type": "1",
+        "flip_x": false,
+        "x": 750
+      },
+      {
+        "tree_type": "2",
+        "flip_x": false,
+        "x": 900
+      },
+      {
+        "tree_type": "1",
+        "flip_x": true,
+        "x": 1300
+      },
+    ],
+
+
+    [
+      {
+        "tree_type": "2",
+        "flip_x": false,
+        "x": 100
+      },
+      {
+        "tree_type": "1",
+        "flip_x": true,
+        "x": 300
+      },
+      {
+        "tree_type": "1",
+        "flip_x": true,
+        "x": 900
+      },
+      {
+        "tree_type": "2",
+        "flip_x": false,
+        "x": 1300
+      }
+    ]
+]
+
+function floor_trees(max_x, platform_num)
+{
+    var trees = []
+    for (var j = 0 ; j < n_tree_layers-1 ; j++)
+    {
+        treesData = randomTrees(max_x)
+
+        trees.push(treesData)
+    }
+
+    trees.push(fixedTrees[platform_num])
+    return trees
+}
 
 function stage1_platform_data() {
     var platforms = []
 
     ground_height = 20;
-    platforms.push({
-        x: -5,
-        y: ground_height,
-        width: Math.floor((hole_x + 5) / platform_unit_length - 1)+1,
-        height: 2,
-        trees: true
-    })
-    platforms.push({
-        x: hole_x + platform_unit_length,
-        y: ground_height,
-        width: Math.floor((world_width - hole_x - platform_unit_length) / platform_unit_length)+1,
-        height: 2,
-        trees: true
-    })
+
+    floor1 =
+        {
+            x: -5,
+            y: ground_height,
+            width: Math.floor((hole_x + 5) / platform_unit_length - 1)+1,
+            height: 2,
+        }
+    floor1.trees = floor_trees(floor1.width * platform_unit_length, 0)
+
+    platforms.push(floor1);
+
+    floor2 =
+        {
+            x: hole_x + platform_unit_length,
+            y: ground_height,
+            width: Math.floor((world_width - hole_x - platform_unit_length) / platform_unit_length)+1,
+            height: 2,
+        }
+
+    floor2.trees = floor_trees(floor2.width * platform_unit_length, 1)
+
+    platforms.push(floor2)
 
     platforms.push({
         x: -5,
@@ -183,7 +291,7 @@ function stage1_platform_data() {
 
     platforms.push({
         x: world_width - 32,
-        y: ground_height + 30 * 32 - 20,
+        y: ground_height + 32 * platform_unit_length,
         z: 0,
         width: 2,
         height: 31,
@@ -200,8 +308,8 @@ function stage1_platform_data() {
     pyramid_data = make_pyramid(world_width - 2000, ground_height + pyramid_spacing, 99, 2, 4, 2, 2, pyramid_spacing, []);
     platforms = platforms.concat(pyramid_data)
 
-    pyramid_data = make_pyramid(300, ground_height + pyramid_spacing, 99, 2, 4, 2, 2, pyramid_spacing, []);
-    platforms = platforms.concat(pyramid_data)
+//    pyramid_data = make_pyramid(300, ground_height + pyramid_spacing, 99, 2, 4, 2, 2, pyramid_spacing, []);
+//    platforms = platforms.concat(pyramid_data)
 
     platforms.push({
            x: 500,
@@ -437,7 +545,7 @@ function do_pyramid(game) {
     for (var i = 0; i < pyramid_platforms.length; i++)
     {
         target = pyramid_platforms[i].sprite
-        platform_tween = game.add.tween(target).to({ y: target.body.y - 80}, 3000).start()
+        platform_tween = game.add.tween(target).to({ y: target.body.y - 60}, 3000).start()
     }
 
     platform_tween.onComplete.add(function () {do_fall(game)} )
@@ -461,24 +569,45 @@ function do_fall(game)
 
     play_sound('gate');
 
-//    camera_return_tween = game.my_moveTo(game.camera_focus.body, game.player, 1000, 500, true)
-    camera_return_tween = game.add.tween(this).to({dummy: 0}, 0, null, true, 100)
+    camera_return_tween = game.my_moveTo(game.camera_focus.body, game.player, 1000, 500, true)
+//    camera_return_tween = game.add.tween(this).to({dummy: 0}, 0, null, true, 100)
     camera_return_tween.onComplete.add(game.attachCameraFocus, game)
 
     game.player.body.gravity.y = 0;
 
     platform = saved_platforms["top_step"][0]
     target = platform.sprite.body
-    platform_tween = game.add.tween(target).to({ y: world_height-(stage1_height+ground_height)}, 10*500)
+    platform_tween = game.add.tween(target).to({ y: world_height-(stage1_height+ground_height)}, 4*1000)
     camera_return_tween.chain(platform_tween)
 
-    platform_tween2 = game.add.tween(target).to({ x: hole_x-platform_unit_length}, 7*1000)
+    platform_tween.onComplete.add(function () {do_flower_appear(game)});
+
+    platform_tween2 = game.add.tween(target).to({ x: hole_x-platform_unit_length}, 4*1000)
     platform_tween.chain(platform_tween2)
 
-//    platform_tween3 = game.add.tween(target).to({ y: world_height-(stage1_height+ground_height)}, 1*1000)
-//    platform_tween2.chain(platform_tween3)
 }
 
+function do_flower_appear(game)
+{
+    pyramid_top_platform = saved_platforms["pyramid_tag"][0].sprite.body
+
+    flower = game.createObject('flower')
+    flower.scale.setTo(.5)
+    flower.anchor.setTo(.5, .9)
+    flower.x = hole_x + platform_unit_length / 2
+    flower.y = pyramid_top_platform.y
+    flower.action = do_flower
+}
+
+function do_flower(game)
+{
+    play_sound('shrink');
+
+    shrink_time = 3 * 1000
+    var player_target_size = .5
+    game.add.tween(game.player).to({abs_size: player_target_size}, shrink_time, Phaser.Easing.Linear.None, true)
+    game.add.tween(game.player.scale).to({y: player_target_size}, shrink_time, Phaser.Easing.Linear.None, true)
+}
 
 function kill_platforms_by_tag(tag)
 {
@@ -522,17 +651,123 @@ function stage1_places_data(game) {
     return output;
 }
 
-function make_sprite(game, x, y, name)
+function make_flame(game, x, y)
 {
-    sprite = game.createObject(name)
+    sprite = game.createObject('flame')
 
     sprite.scale.setTo(.25)
     sprite.anchor.setTo(.25, .25)
     sprite.x = x
     sprite.y = world_height - y
-    sprite.animations.add(name, frames, 20, true);
-    sprite.play(name);
+    sprite.animations.add('flame', null, 20, true);
+    sprite.play('flame');
 
+    return sprite
+}
+
+function create_grasshead(game, min_x, max_x, y)
+{
+    sprite = game.createEnemy('grasshead')
+
+//    sprite.scale.setTo(.125)
+    sprite.anchor.setTo(0.5, .9)
+    sprite.animations.add('gh', null, 40, true);
+    sprite.play('gh');
+    crop_x = 9
+    crop_y = 5
+    sprite.body.setSize(49-2*crop_x, 48-2*crop_y, crop_x, crop_y);
+    sprite.x = min_x
+    sprite.y = y
+    sprite.min_x = min_x
+    sprite.max_x = max_x
+    sprite.speed = 100;
+    sprite.body.immovable = true;
+    sprite.update = function(game)
+    {
+        if (!this.dir)
+        {
+            this.dir = 1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+
+        if (this.body.x >= this.max_x)
+        {
+            this.dir = -1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+        else if (this.body.x <= this.min_x)
+        {
+            this.dir = 1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+
+        if (this.dir == 1)
+            this.scale.x = -Math.abs(this.scale.x)
+        else if (this.dir == -1)
+            this.scale.x = Math.abs(this.scale.x)
+    }
+
+    sprite.collidePlayer = function (player, game)
+    {
+        if (this.body.touching.left || this.body.touching.right)
+        {
+            if ((this.body.touching.left && this.dir == -1) ||
+            (this.body.touching.right && this.dir == 1))
+                this.body.x = this.body.prev.x
+        }
+    }
+
+    return sprite
+}
+
+function create_ghost(game, min_x, max_x, y)
+{
+    sprite = game.createEnemy('ghost')
+
+//    sprite.scale.setTo(.125)
+    sprite.anchor.setTo(0.5, .9)
+    sprite.animations.add('gh', null, 40, true);
+    sprite.play('gh');
+    crop_x = 9
+    crop_y = 5
+    sprite.body.setSize(126-2*crop_x, 82-2*crop_y, crop_x, crop_y);
+    sprite.x = min_x
+    sprite.y = y
+    sprite.min_x = min_x
+    sprite.max_x = max_x
+    sprite.speed = 50;
+    sprite.update = function (game)
+    {
+        if (!this.dir)
+        {
+            this.dir = 1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+
+        if (this.body.x >= this.max_x)
+        {
+            this.dir = -1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+        else if (this.body.x <= this.min_x)
+        {
+            this.dir = 1;
+            this.body.velocity.x = this.dir * this.speed;
+        }
+    }
+
+    sprite.collidePlayer = function (player, game)
+    {
+        if (this.body.touching.left || this.body.touching.right)
+        {
+            this.body.velocity.x = this.dir * this.speed;
+//            if ((this.body.touching.left && this.dir == -1) ||
+//            (this.body.touching.right && this.dir == 1))
+//                this.body.x = this.body.prev.x
+        }
+        this.body.velocity.y = 0
+        this.body.y = this.body.prev.y
+    }
     return sprite
 }
 
@@ -547,12 +782,16 @@ function init_game_data(game)
 
     flame_x = gate_platform.x + (gate_platform.width * platform_unit_length / 2) - (32 / 2);
 
-    flame1 = make_sprite(game, flame_x, gate_platform.y+44, 'flame')
+    flame1 = make_flame(game, flame_x, gate_platform.y+44)
     flame1.action = do_steps
-    flame2 = make_sprite(game, trigger_loc.x, trigger_loc.y, 'flame')
+    flame2 = make_flame(game, trigger_loc.x, trigger_loc.y)
     flame2.action = do_pyramid
 
     game.createStage(platform_data, places_data)
+
+    create_grasshead(game, 200, 440, world_height - (stage1_height + 20))
+
+    create_ghost(game, world_width-1400, world_width-1000, world_height - (stage1_height + 800))
 
 //    guy = game.createObject('guy')
 //    guy.scale.setTo(32/78, 48/161)
@@ -566,7 +805,6 @@ function init_game_data(game)
 
     var stage1_start = {
         x: world_width - 300,
-//        y: world_height - (stage1_height + 150)
         y: world_height - (stage1_height + 150)
     }
 
@@ -597,7 +835,7 @@ function cheats(game)
 //    handlePlace("gate", true)
 //    stop_sound("gate")
 
-    game.player.x = flame2.x+50;
-    game.player.y = flame2.y;
+    game.player.x = stage1_left_player_start.x;
+    game.player.y = stage1_left_player_start.y;
 
 }
